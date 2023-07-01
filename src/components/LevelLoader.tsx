@@ -1,47 +1,56 @@
-import { useEffect, useState } from "react";
-import { LevelGroup } from "../levels";
+import { useEffect, useState } from 'react';
+import { LevelGroup } from '../levels';
 
 declare global {
-    interface Window {
-        level: any;
-    }
+	interface Window {
+		level: any;
+	}
 }
 
 const LevelLoader = ({ levels: levelGroups }: { levels: LevelGroup[] }) => {
+	const [selectedLevelIndex, setSelectedLevelIndex] = useState(0);
+	const levels = levelGroups.flatMap((group) =>
+		group.levels.map((level) => ({ group, level }))
+	);
+	const selectedLevelEntry = levels[selectedLevelIndex];
 
-    const [selectedLevelIndex, setSelectedLevelIndex] = useState(0);
-    const levels = levelGroups.flatMap(group => group.levels.map(level => ({ group, level })));
-    const selectedLevelEntry = levels[selectedLevelIndex];
+	const win = () => {
+		const hasFinishedAllLevels = selectedLevelIndex + 1 >= levels.length;
+		alert(`You completed level ${selectedLevelIndex + 1} 🎉`);
 
-    const win = () => {
-        const hasFinishedAllLevels = selectedLevelIndex + 1 >= levels.length
-        alert(`You completed level ${selectedLevelIndex + 1} 🎉`);
+		if (hasFinishedAllLevels) {
+			alert(`You completed all the levels! 🤩😎`);
+			return;
+		}
 
-        if (hasFinishedAllLevels) {
-            alert(`You completed all the levels! 🤩😎`);
-            return;
-        }
+		setSelectedLevelIndex((prev) => prev + 1);
+	};
 
-        setSelectedLevelIndex(prev => prev + 1);
-    }
+	useEffect(() => {
+		const LevelDefinition = selectedLevelEntry.level;
 
-    useEffect(() => {
+		window.level = LevelDefinition.create(win);
 
-        const LevelFactory = selectedLevelEntry.level;
+		return () => {
+			window.level = undefined;
+		};
+	}, [selectedLevelEntry]);
 
-        window.level = LevelFactory(win);
+	useEffect(() => {
+		if (import.meta.env.DEV) {
+			(window as any).setSelectedLevel = (level: number) =>
+				setSelectedLevelIndex(level - 1);
+		}
+	}, []);
 
-        return () => {
-            window.level = undefined;
-        }
-
-    }, [selectedLevelEntry])
-
-    return <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <span>LevelLoader</span>
-        <span>Level {selectedLevelIndex + 1} ({selectedLevelEntry.group.id})</span>
-    </div>
-
-}
+	return (
+		<div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+			<span>LevelLoader</span>
+			<span>
+				Level {selectedLevelIndex + 1} ({selectedLevelEntry.group.id})
+			</span>
+		</div>
+	);
+};
 
 export default LevelLoader;
